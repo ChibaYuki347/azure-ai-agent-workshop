@@ -1,0 +1,25 @@
+# General
+.DS_Store
+.env
+.env.*
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+
+# Dotnet build outputs
+bin/
+obj/
+**/bin/
+**/obj/
+
+# VS tooling
+*.user
+*.suo
+*.cache
+.idea/
+.vscode/

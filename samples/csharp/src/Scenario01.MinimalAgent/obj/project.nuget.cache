@@ -1,8 +1,0 @@
-{
-  "version": 2,
-  "dgSpecHash": "zYAiqBF5h5jVunkRFo86Zv5JWxlIVRqnH+FnLAiwe8U6urIQNxRvh1D85dpEkApJQEEWdk3aX3jbhmOqKke78w==",
-  "success": true,
-  "projectFilePath": "/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario01.MinimalAgent/Scenario01.MinimalAgent.csproj",
-  "expectedPackageFiles": [],
-  "logs": []
-}

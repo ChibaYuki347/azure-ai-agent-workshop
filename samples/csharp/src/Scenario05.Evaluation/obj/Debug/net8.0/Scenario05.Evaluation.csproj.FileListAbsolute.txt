@@ -1,0 +1,14 @@
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/bin/Debug/net8.0/Scenario05.Evaluation
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/bin/Debug/net8.0/Scenario05.Evaluation.deps.json
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/bin/Debug/net8.0/Scenario05.Evaluation.runtimeconfig.json
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/bin/Debug/net8.0/Scenario05.Evaluation.dll
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/bin/Debug/net8.0/Scenario05.Evaluation.pdb
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/obj/Debug/net8.0/Scenario05.Evaluation.GeneratedMSBuildEditorConfig.editorconfig
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/obj/Debug/net8.0/Scenario05.Evaluation.AssemblyInfoInputs.cache
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/obj/Debug/net8.0/Scenario05.Evaluation.AssemblyInfo.cs
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/obj/Debug/net8.0/Scenario05.Evaluation.csproj.CoreCompileInputs.cache
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/obj/Debug/net8.0/Scenario05.Evaluation.dll
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/obj/Debug/net8.0/refint/Scenario05.Evaluation.dll
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/obj/Debug/net8.0/Scenario05.Evaluation.pdb
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/obj/Debug/net8.0/Scenario05.Evaluation.genruntimeconfig.cache
+/Users/chibayuuki/azure-ai-agent-build-and-manage-workshop/samples/csharp/src/Scenario05.Evaluation/obj/Debug/net8.0/ref/Scenario05.Evaluation.dll

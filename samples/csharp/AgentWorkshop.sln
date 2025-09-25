@@ -1,0 +1,62 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{93B0EB01-3E65-45E5-B05B-DB3B6C549D40}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgentWorkshop.Common", "src\AgentWorkshop.Common\AgentWorkshop.Common.csproj", "{120B6FFD-8143-4D34-BF20-AD3F039F09CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scenario01.MinimalAgent", "src\Scenario01.MinimalAgent\Scenario01.MinimalAgent.csproj", "{EA99874F-88ED-47AA-86CA-C1DB6C82B1F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scenario02.AiSearchRag", "src\Scenario02.AiSearchRag\Scenario02.AiSearchRag.csproj", "{8F837881-701E-4813-A1B6-B346DE01C968}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scenario03.LogicAppTool", "src\Scenario03.LogicAppTool\Scenario03.LogicAppTool.csproj", "{37FA5753-DD98-499C-8770-2B3621A00AB0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scenario04.ConnectedAgents", "src\Scenario04.ConnectedAgents\Scenario04.ConnectedAgents.csproj", "{5D78A09E-11B4-4097-B90D-5E2B0C0F87D3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scenario05.Evaluation", "src\Scenario05.Evaluation\Scenario05.Evaluation.csproj", "{2F288618-B961-408E-B4E2-2EFAFA678D41}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{120B6FFD-8143-4D34-BF20-AD3F039F09CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{120B6FFD-8143-4D34-BF20-AD3F039F09CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{120B6FFD-8143-4D34-BF20-AD3F039F09CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{120B6FFD-8143-4D34-BF20-AD3F039F09CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EA99874F-88ED-47AA-86CA-C1DB6C82B1F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA99874F-88ED-47AA-86CA-C1DB6C82B1F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA99874F-88ED-47AA-86CA-C1DB6C82B1F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA99874F-88ED-47AA-86CA-C1DB6C82B1F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F837881-701E-4813-A1B6-B346DE01C968}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F837881-701E-4813-A1B6-B346DE01C968}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F837881-701E-4813-A1B6-B346DE01C968}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F837881-701E-4813-A1B6-B346DE01C968}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37FA5753-DD98-499C-8770-2B3621A00AB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37FA5753-DD98-499C-8770-2B3621A00AB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37FA5753-DD98-499C-8770-2B3621A00AB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37FA5753-DD98-499C-8770-2B3621A00AB0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D78A09E-11B4-4097-B90D-5E2B0C0F87D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D78A09E-11B4-4097-B90D-5E2B0C0F87D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D78A09E-11B4-4097-B90D-5E2B0C0F87D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D78A09E-11B4-4097-B90D-5E2B0C0F87D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F288618-B961-408E-B4E2-2EFAFA678D41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F288618-B961-408E-B4E2-2EFAFA678D41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F288618-B961-408E-B4E2-2EFAFA678D41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F288618-B961-408E-B4E2-2EFAFA678D41}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{120B6FFD-8143-4D34-BF20-AD3F039F09CF} = {93B0EB01-3E65-45E5-B05B-DB3B6C549D40}
+		{EA99874F-88ED-47AA-86CA-C1DB6C82B1F2} = {93B0EB01-3E65-45E5-B05B-DB3B6C549D40}
+		{8F837881-701E-4813-A1B6-B346DE01C968} = {93B0EB01-3E65-45E5-B05B-DB3B6C549D40}
+		{37FA5753-DD98-499C-8770-2B3621A00AB0} = {93B0EB01-3E65-45E5-B05B-DB3B6C549D40}
+		{5D78A09E-11B4-4097-B90D-5E2B0C0F87D3} = {93B0EB01-3E65-45E5-B05B-DB3B6C549D40}
+		{2F288618-B961-408E-B4E2-2EFAFA678D41} = {93B0EB01-3E65-45E5-B05B-DB3B6C549D40}
+	EndGlobalSection
+EndGlobal

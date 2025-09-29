@@ -1,0 +1,60 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2016-06-01/Microsoft.Logic.json",
+  "contentVersion": "1.0.0.0",
+  "triggers": {
+    "manual": {
+      "type": "Request",
+      "kind": "Http",
+      "inputs": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "to": {
+                  "type": "string"
+                },
+                "subject": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "to",
+                "subject",
+                "message"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "actions": {
+    "LogRequest": {
+      "type": "Compose",
+      "inputs": {
+        "status": "received",
+        "subject": "@triggerBody()['body']['subject']"
+      }
+    },
+    "Respond": {
+      "runAfter": {
+        "LogRequest": [
+          "Succeeded"
+        ]
+      },
+      "type": "Response",
+      "inputs": {
+        "statusCode": 200,
+        "body": {
+          "status": "queued"
+        }
+      }
+    }
+  },
+  "outputs": {}
+}

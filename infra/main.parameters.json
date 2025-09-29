@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "japaneast"
+    },
+    "environment": {
+      "value": "workshop"
+    },
+    "adminObjectId": {
+      "value": "00000000-0000-0000-0000-000000000000"
+    },
+    "aiSearchSku": {
+      "value": "standard"
+    },
+    "aiSearchReplicaCount": {
+      "value": 1
+    },
+    "aiSearchPartitionCount": {
+      "value": 1
+    },
+    "deployApim": {
+      "value": true
+    }
+  }
+}

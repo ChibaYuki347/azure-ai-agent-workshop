@@ -1,0 +1,397 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.36.1.42791",
+      "templateHash": "9720082136204157437"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure region for all resources"
+      }
+    },
+    "environment": {
+      "type": "string",
+      "metadata": {
+        "description": "Environment name suffix (e.g. dev, staging, prod). Used for resource naming."
+      }
+    },
+    "adminObjectId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AD object ID for the primary administrator (granted access to Key Vault)."
+      }
+    },
+    "aiSearchSku": {
+      "type": "string",
+      "defaultValue": "standard",
+      "allowedValues": [
+        "basic",
+        "standard",
+        "standard2",
+        "standard3"
+      ],
+      "metadata": {
+        "description": "SKU for the Azure AI Search service."
+      }
+    },
+    "openAiSku": {
+      "type": "string",
+      "defaultValue": "S0",
+      "allowedValues": [
+        "S0"
+      ],
+      "metadata": {
+        "description": "SKU tier for Azure OpenAI."
+      }
+    },
+    "aiSearchReplicaCount": {
+      "type": "int",
+      "defaultValue": 1,
+      "minValue": 1,
+      "metadata": {
+        "description": "Replica count for Azure AI Search service."
+      }
+    },
+    "aiSearchPartitionCount": {
+      "type": "int",
+      "defaultValue": 1,
+      "minValue": 1,
+      "metadata": {
+        "description": "Partition count for Azure AI Search service."
+      }
+    },
+    "logicAppDefinition": {
+      "type": "object",
+      "defaultValue": "[variables('$fxv#0')]",
+      "metadata": {
+        "description": "Logic App workflow definition. Override with a file path via `bicep --parameters`."
+      }
+    },
+    "deployApim": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Enable deployment of an Azure API Management instance for rate limiting demos."
+      }
+    },
+    "resourceTags": {
+      "type": "object",
+      "defaultValue": {
+        "workload": "azure-ai-agent-workshop",
+        "environment": "[parameters('environment')]"
+      },
+      "metadata": {
+        "description": "Tags applied to all resources."
+      }
+    }
+  },
+  "variables": {
+    "$fxv#0": {
+      "$schema": "https://schema.management.azure.com/schemas/2016-06-01/Microsoft.Logic.json",
+      "contentVersion": "1.0.0.0",
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Http",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "body": {
+                  "type": "object",
+                  "properties": {
+                    "to": {
+                      "type": "string"
+                    },
+                    "subject": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "to",
+                    "subject",
+                    "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "actions": {
+        "LogRequest": {
+          "type": "Compose",
+          "inputs": {
+            "status": "received",
+            "subject": "@triggerBody()['body']['subject']"
+          }
+        },
+        "Respond": {
+          "runAfter": {
+            "LogRequest": [
+              "Succeeded"
+            ]
+          },
+          "type": "Response",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "status": "queued"
+            }
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "envSanitized": "[toLower(replace(parameters('environment'), '-', ''))]",
+    "envSegment": "[substring(variables('envSanitized'), 0, min(length(variables('envSanitized')), 8))]",
+    "uniqueSegment": "[substring(uniqueString(resourceGroup().id), 0, 6)]",
+    "namePrefix": "[toLower(replace(format('{0}-aiagent', parameters('environment')), '--', '-'))]",
+    "workspaceName": "[format('{0}-log', variables('namePrefix'))]",
+    "appInsightsName": "[format('{0}-appi', variables('namePrefix'))]",
+    "storageName": "[format('{0}ai{1}', variables('envSegment'), variables('uniqueSegment'))]",
+    "keyVaultName": "[toLower(replace(format('{0}-aiagent-kv', parameters('environment')), '-', ''))]",
+    "openAiName": "[toLower(format('{0}-aoai', parameters('environment')))]",
+    "aiSearchName": "[toLower(format('{0}-aisearch', parameters('environment')))]",
+    "logicAppName": "[format('{0}-agent-logicapp', parameters('environment'))]",
+    "apimName": "[toLower(format('{0}-aiagent-apim', parameters('environment')))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2022-10-01",
+      "name": "[variables('workspaceName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('resourceTags')]",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        },
+        "retentionInDays": 30
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('appInsightsName')]",
+      "location": "[parameters('location')]",
+      "kind": "web",
+      "tags": "[parameters('resourceTags')]",
+      "properties": {
+        "Application_Type": "web",
+        "Flow_Type": "Azure",
+        "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('storageName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "tags": "[parameters('resourceTags')]",
+      "properties": {
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": false,
+        "allowSharedKeyAccess": false,
+        "supportsHttpsTrafficOnly": true
+      }
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2023-07-01",
+      "name": "[variables('keyVaultName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('resourceTags')]",
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "enablePurgeProtection": true,
+        "enableSoftDelete": true,
+        "accessPolicies": [
+          {
+            "tenantId": "[subscription().tenantId]",
+            "objectId": "[parameters('adminObjectId')]",
+            "permissions": {
+              "secrets": [
+                "get",
+                "list",
+                "set",
+                "delete",
+                "recover"
+              ]
+            }
+          }
+        ],
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('openAiName')]",
+      "location": "[parameters('location')]",
+      "kind": "OpenAI",
+      "sku": {
+        "name": "[parameters('openAiSku')]"
+      },
+      "tags": "[parameters('resourceTags')]",
+      "properties": {
+        "apiProperties": {
+          "statisticsEnabled": true
+        },
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.Search/searchServices",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('aiSearchName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('aiSearchSku')]"
+      },
+      "tags": "[parameters('resourceTags')]",
+      "properties": {
+        "hostingMode": "default",
+        "partitionCount": "[parameters('aiSearchPartitionCount')]",
+        "replicaCount": "[parameters('aiSearchReplicaCount')]",
+        "publicNetworkAccess": "enabled"
+      }
+    },
+    {
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "2019-05-01",
+      "name": "[variables('logicAppName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('resourceTags')]",
+      "properties": {
+        "state": "Enabled",
+        "definition": "[parameters('logicAppDefinition')]"
+      }
+    },
+    {
+      "condition": "[parameters('deployApim')]",
+      "type": "Microsoft.ApiManagement/service",
+      "apiVersion": "2022-08-01",
+      "name": "[variables('apimName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('resourceTags')]",
+      "sku": {
+        "name": "Developer",
+        "capacity": 1
+      },
+      "properties": {
+        "publisherEmail": "admin@example.com",
+        "publisherName": "Agent Workshop",
+        "virtualNetworkType": "None"
+      }
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.Logic/workflows/{0}', variables('logicAppName'))]",
+      "name": "[format('{0}-diag', variables('logicAppName'))]",
+      "properties": {
+        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]",
+        "logs": [
+          {
+            "category": "WorkflowRuntime",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Logic/workflows', variables('logicAppName'))]",
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployApim')]",
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.ApiManagement/service/{0}', variables('apimName'))]",
+      "name": "[format('{0}-diag', variables('apimName'))]",
+      "properties": {
+        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]",
+        "logs": [
+          {
+            "category": "GatewayLogs",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": false,
+              "days": 0
+            }
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": false,
+              "days": 0
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', variables('apimName'))]",
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "storageAccountName": {
+      "type": "string",
+      "value": "[variables('storageName')]"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "value": "[variables('keyVaultName')]"
+    },
+    "openAiAccountName": {
+      "type": "string",
+      "value": "[variables('openAiName')]"
+    },
+    "aiSearchServiceName": {
+      "type": "string",
+      "value": "[variables('aiSearchName')]"
+    },
+    "logicAppCallbackUrl": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Logic/workflows', variables('logicAppName')), '2019-05-01').accessEndpoint]"
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('workspaceName'))]"
+    },
+    "appInsightsName": {
+      "type": "string",
+      "value": "[variables('appInsightsName')]"
+    },
+    "apiManagementName": {
+      "type": "string",
+      "value": "[if(parameters('deployApim'), variables('apimName'), 'not-deployed')]"
+    }
+  }
+}

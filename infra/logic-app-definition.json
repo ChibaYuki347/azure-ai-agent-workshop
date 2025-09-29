@@ -38,7 +38,7 @@
       "type": "Compose",
       "inputs": {
         "status": "received",
-        "subject": "@triggerBody()['body']['subject']"
+          "subject": "@triggerBody()?['body']?['subject']"
       }
     },
     "Respond": {

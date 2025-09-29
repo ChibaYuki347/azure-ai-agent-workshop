@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "9720082136204157437"
+      "templateHash": "12238865784011861307"
     }
   },
   "parameters": {
@@ -164,7 +164,10 @@
     "openAiName": "[toLower(format('{0}-aoai', parameters('environment')))]",
     "aiSearchName": "[toLower(format('{0}-aisearch', parameters('environment')))]",
     "logicAppName": "[format('{0}-agent-logicapp', parameters('environment'))]",
-    "apimName": "[toLower(format('{0}-aiagent-apim', parameters('environment')))]"
+    "apimName": "[toLower(format('{0}-aiagent-apim', parameters('environment')))]",
+    "aiAgentServiceName": "[toLower(format('{0}-aiagent-service', parameters('environment')))]",
+    "aiAgentProjectName": "[format('{0}-project', variables('aiAgentServiceName'))]",
+    "aiAgentCustomRaiPolicyName": "[format('CustomContentFilter{0}', variables('uniqueSegment'))]"
   },
   "resources": [
     {
@@ -261,6 +264,193 @@
         },
         "publicNetworkAccess": "Enabled"
       }
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2025-06-01",
+      "name": "[variables('aiAgentServiceName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('resourceTags')]",
+      "sku": {
+        "name": "S0"
+      },
+      "kind": "AIServices",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "apiProperties": {},
+        "customSubDomainName": "[variables('aiAgentServiceName')]",
+        "allowProjectManagement": true,
+        "defaultProject": "[variables('aiAgentProjectName')]",
+        "associatedProjects": [
+          "[variables('aiAgentProjectName')]"
+        ],
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/defenderForAISettings",
+      "apiVersion": "2025-06-01",
+      "name": "[format('{0}/{1}', variables('aiAgentServiceName'), 'Default')]",
+      "properties": {
+        "state": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('aiAgentServiceName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/raiPolicies",
+      "apiVersion": "2025-06-01",
+      "name": "[format('{0}/{1}', variables('aiAgentServiceName'), variables('aiAgentCustomRaiPolicyName'))]",
+      "properties": {
+        "mode": "Default",
+        "basePolicyName": "Microsoft.DefaultV2",
+        "contentFilters": [
+          {
+            "name": "Violence",
+            "severityThreshold": "Medium",
+            "blocking": false,
+            "enabled": true,
+            "source": "Prompt"
+          },
+          {
+            "name": "Hate",
+            "severityThreshold": "Medium",
+            "blocking": false,
+            "enabled": true,
+            "source": "Prompt"
+          },
+          {
+            "name": "Sexual",
+            "severityThreshold": "Medium",
+            "blocking": false,
+            "enabled": true,
+            "source": "Prompt"
+          },
+          {
+            "name": "Selfharm",
+            "severityThreshold": "Medium",
+            "blocking": false,
+            "enabled": true,
+            "source": "Prompt"
+          },
+          {
+            "name": "Jailbreak",
+            "blocking": false,
+            "enabled": true,
+            "source": "Prompt"
+          },
+          {
+            "name": "Indirect Attack",
+            "blocking": false,
+            "enabled": true,
+            "source": "Prompt"
+          },
+          {
+            "name": "Violence",
+            "severityThreshold": "Medium",
+            "blocking": true,
+            "enabled": true,
+            "source": "Completion"
+          },
+          {
+            "name": "Hate",
+            "severityThreshold": "Medium",
+            "blocking": true,
+            "enabled": true,
+            "source": "Completion"
+          },
+          {
+            "name": "Sexual",
+            "severityThreshold": "Medium",
+            "blocking": true,
+            "enabled": true,
+            "source": "Completion"
+          },
+          {
+            "name": "Selfharm",
+            "severityThreshold": "Medium",
+            "blocking": true,
+            "enabled": true,
+            "source": "Completion"
+          },
+          {
+            "name": "Protected Material Text",
+            "blocking": true,
+            "enabled": true,
+            "source": "Completion"
+          },
+          {
+            "name": "Protected Material Code",
+            "blocking": false,
+            "enabled": true,
+            "source": "Completion"
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('aiAgentServiceName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/projects",
+      "apiVersion": "2025-06-01",
+      "name": "[format('{0}/{1}', variables('aiAgentServiceName'), variables('aiAgentProjectName'))]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {},
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('aiAgentServiceName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/deployments",
+      "apiVersion": "2025-06-01",
+      "name": "[format('{0}/{1}', variables('aiAgentServiceName'), 'gpt-4o')]",
+      "sku": {
+        "name": "GlobalStandard",
+        "capacity": 100
+      },
+      "properties": {
+        "model": {
+          "format": "OpenAI",
+          "name": "gpt-4o",
+          "version": "2024-11-20"
+        },
+        "versionUpgradeOption": "OnceNewDefaultVersionAvailable",
+        "currentCapacity": 100,
+        "raiPolicyName": "[variables('aiAgentCustomRaiPolicyName')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts/raiPolicies', variables('aiAgentServiceName'), variables('aiAgentCustomRaiPolicyName'))]",
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('aiAgentServiceName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/deployments",
+      "apiVersion": "2025-06-01",
+      "name": "[format('{0}/{1}', variables('aiAgentServiceName'), 'gpt-4o-mini')]",
+      "sku": {
+        "name": "GlobalStandard",
+        "capacity": 50
+      },
+      "properties": {
+        "model": {
+          "format": "OpenAI",
+          "name": "gpt-4o-mini",
+          "version": "2024-07-18"
+        },
+        "versionUpgradeOption": "OnceNewDefaultVersionAvailable",
+        "currentCapacity": 50,
+        "raiPolicyName": "Microsoft.DefaultV2"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', variables('aiAgentServiceName'))]"
+      ]
     },
     {
       "type": "Microsoft.Search/searchServices",
@@ -372,6 +562,10 @@
     "openAiAccountName": {
       "type": "string",
       "value": "[variables('openAiName')]"
+    },
+    "aiAgentServiceAccountName": {
+      "type": "string",
+      "value": "[variables('aiAgentServiceName')]"
     },
     "aiSearchServiceName": {
       "type": "string",

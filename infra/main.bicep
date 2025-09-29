@@ -54,6 +54,9 @@ var openAiName = toLower('${environment}-aoai')
 var aiSearchName = toLower('${environment}-aisearch')
 var logicAppName = '${environment}-agent-logicapp'
 var apimName = toLower('${environment}-aiagent-apim')
+var aiAgentServiceName = toLower('${environment}-aiagent-service')
+var aiAgentProjectName = '${aiAgentServiceName}-project'
+var aiAgentCustomRaiPolicyName = 'CustomContentFilter${uniqueSegment}'
 
 // Log Analytics workspace
 resource logWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
@@ -147,6 +150,180 @@ resource openAi 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
   }
 }
 
+// Azure AI Agent Service account and configuration
+resource aiAgentService 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
+  name: aiAgentServiceName
+  location: location
+  tags: resourceTags
+  sku: {
+    name: 'S0'
+  }
+  kind: 'AIServices'
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    apiProperties: {}
+    customSubDomainName: aiAgentServiceName
+    allowProjectManagement: true
+    defaultProject: aiAgentProjectName
+    associatedProjects: [
+      aiAgentProjectName
+    ]
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+resource aiAgentDefenderSettings 'Microsoft.CognitiveServices/accounts/defenderForAISettings@2025-06-01' = {
+  parent: aiAgentService
+  name: 'Default'
+  properties: {
+    state: 'Disabled'
+  }
+}
+
+resource aiAgentRaiPolicyCustom 'Microsoft.CognitiveServices/accounts/raiPolicies@2025-06-01' = {
+  parent: aiAgentService
+  name: aiAgentCustomRaiPolicyName
+  properties: {
+    mode: 'Default'
+    basePolicyName: 'Microsoft.DefaultV2'
+    contentFilters: [
+      {
+        name: 'Violence'
+        severityThreshold: 'Medium'
+        blocking: false
+        enabled: true
+        source: 'Prompt'
+      }
+      {
+        name: 'Hate'
+        severityThreshold: 'Medium'
+        blocking: false
+        enabled: true
+        source: 'Prompt'
+      }
+      {
+        name: 'Sexual'
+        severityThreshold: 'Medium'
+        blocking: false
+        enabled: true
+        source: 'Prompt'
+      }
+      {
+        name: 'Selfharm'
+        severityThreshold: 'Medium'
+        blocking: false
+        enabled: true
+        source: 'Prompt'
+      }
+      {
+        name: 'Jailbreak'
+        blocking: false
+        enabled: true
+        source: 'Prompt'
+      }
+      {
+        name: 'Indirect Attack'
+        blocking: false
+        enabled: true
+        source: 'Prompt'
+      }
+      {
+        name: 'Violence'
+        severityThreshold: 'Medium'
+        blocking: true
+        enabled: true
+        source: 'Completion'
+      }
+      {
+        name: 'Hate'
+        severityThreshold: 'Medium'
+        blocking: true
+        enabled: true
+        source: 'Completion'
+      }
+      {
+        name: 'Sexual'
+        severityThreshold: 'Medium'
+        blocking: true
+        enabled: true
+        source: 'Completion'
+      }
+      {
+        name: 'Selfharm'
+        severityThreshold: 'Medium'
+        blocking: true
+        enabled: true
+        source: 'Completion'
+      }
+      {
+        name: 'Protected Material Text'
+        blocking: true
+        enabled: true
+        source: 'Completion'
+      }
+      {
+        name: 'Protected Material Code'
+        blocking: false
+        enabled: true
+        source: 'Completion'
+      }
+    ]
+  }
+}
+
+resource aiAgentProject 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
+  parent: aiAgentService
+  name: aiAgentProjectName
+  location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {}
+}
+
+resource aiAgentDeploymentGpt4o 'Microsoft.CognitiveServices/accounts/deployments@2025-06-01' = {
+  parent: aiAgentService
+  name: 'gpt-4o'
+  sku: {
+    name: 'GlobalStandard'
+    capacity: 100
+  }
+  properties: {
+    model: {
+      format: 'OpenAI'
+      name: 'gpt-4o'
+      version: '2024-11-20'
+    }
+    versionUpgradeOption: 'OnceNewDefaultVersionAvailable'
+  currentCapacity: 100
+    raiPolicyName: aiAgentCustomRaiPolicyName
+  }
+  dependsOn: [
+    aiAgentRaiPolicyCustom
+  ]
+}
+
+resource aiAgentDeploymentGpt4oMini 'Microsoft.CognitiveServices/accounts/deployments@2025-06-01' = {
+  parent: aiAgentService
+  name: 'gpt-4o-mini'
+  sku: {
+    name: 'GlobalStandard'
+    capacity: 50
+  }
+  properties: {
+    model: {
+      format: 'OpenAI'
+      name: 'gpt-4o-mini'
+      version: '2024-07-18'
+    }
+    versionUpgradeOption: 'OnceNewDefaultVersionAvailable'
+  currentCapacity: 50
+    raiPolicyName: 'Microsoft.DefaultV2'
+  }
+}
+
 // Azure AI Search service
 resource search 'Microsoft.Search/searchServices@2023-11-01' = {
   name: aiSearchName
@@ -236,6 +413,7 @@ resource apimDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-previ
 output storageAccountName string = storage.name
 output keyVaultName string = keyVault.name
 output openAiAccountName string = openAi.name
+output aiAgentServiceAccountName string = aiAgentService.name
 output aiSearchServiceName string = search.name
 output logicAppCallbackUrl string = logicApp.properties.accessEndpoint
 output logAnalyticsWorkspaceId string = logWorkspace.id

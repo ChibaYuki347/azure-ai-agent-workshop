@@ -9,7 +9,8 @@ This folder hosts infrastructure-as-code assets and deployment guidance for the 
 | Governance | Resource Group (per environment) | Logical boundary for workshop assets. |
 | Identity & Secrets | Azure Key Vault | Stores connection strings (Logic Apps, SMTP bridging, API auth). |
 | Networking | Virtual Network (optional) | Provides private connectivity when Managed Network / Private Link is required. |
-| Core AI | Azure AI Foundry hub + project | Hosts Azure AI Agent Service, Prompt flow, evaluation artifacts. *Created via portal/CLI today.* |
+| Core AI | Azure AI Agent Service account + project | Hosts managed agent runtime, model deployments, and default RAI policies (now provisioned via Bicep). |
+| Core AI (manual) | Azure AI Foundry hub + project | Enables Prompt flow, evaluation pipelines, and collaborative assets. Create via portal/CLI until ARM support lands. |
 | Model Serving | Azure OpenAI resource | Deploy GPT-series models used by the agents. |
 | Retrieval | Azure AI Search service + index | Backs the RAG scenarios. |
 | Tooling | Logic App Standard | Implements the email/notification workflow consumed via Logic App tool. |
@@ -20,9 +21,9 @@ This folder hosts infrastructure-as-code assets and deployment guidance for the 
 
 ## Deployment Options
 
-1. **Baseline Bicep template** (`main.bicep`): provisions repeatable resources (all except the AI Foundry hub/project, which currently require Azure CLI/portal).
-2. **Post-deploy scripts**: configure AI Search index, Logic App workflow definition, and API Management policies.
-3. **Manual steps**: create the Azure AI Foundry hub/project and enable Agent Service & Prompt flow (until full ARM/Bicep coverage is available).
+1. **Baseline Bicep template** (`main.bicep`): provisions shared resources including Azure AI Agent Service, OpenAI, AI Search, Logic App, monitoring, and optional API Management.
+2. **Post-deploy scripts**: configure AI Search index, Logic App workflow definition, Agent tool connections, and API Management policies.
+3. **Manual steps**: create the Azure AI Foundry hub/project and enable Prompt flow (until full ARM/Bicep coverage is available).
 
 ## Environments
 
@@ -60,15 +61,13 @@ Use consistent naming such as:
 az login
 az account set --subscription <subscription-id>
 
-# deploy bicep (requires Bicep CLI / az CLI 2.62+)
+# deploy bicep (requires Azure CLI 2.72.0+ for latest Cognitive Services types)
 az deployment group create \
   --resource-group rg-aiagent-workshop-dev \
   --template-file infra/main.bicep \
   --parameters @infra/main.parameters.json \
   --parameters adminObjectId=<your-AAD-object-id>
 ```
-
-> **Note**: local environment currently lacks the Bicep CLI (`bicep build` failed). Install it via `az bicep install` before running the deployment.
 
 ### 2. Create Azure AI Foundry hub & project
 
@@ -77,6 +76,8 @@ az extension add --name ai-experimental
 az ai hub create --name aifoundry-hub-dev --resource-group rg-aiagent-workshop-dev --location japaneast
 az ai project create --name aifoundry-project-dev --hub-name aifoundry-hub-dev --resource-group rg-aiagent-workshop-dev
 ```
+
+> **Next**: open the Azure AI Agent Service account (`workshop-aiagent-service`) in the portal and create an Azure OpenAI connection using Entra ID authentication so agents can invoke your `workshop-aoai` models. This step is currently manual until ARM support is finalized.
 
 Associate connections inside the project:
 

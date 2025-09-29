@@ -85,18 +85,19 @@ After Bicep deployment, complete these manual steps:
 Choose your preferred language and follow the samples:
 
 #### Python Samples
+
 ```bash
 cd samples/python
 pip install -r requirements.txt
 
 # Basic agent conversation
-python basic_agent.py
+python 01_basic_agent/main.py
 
-# RAG-enabled agent
-python rag_agent.py
+# RAG-enabled agent with AI Search
+python 02_ai_search_rag/main.py
 
-# Tool-calling agent with Logic Apps
-python tool_agent.py
+# Connected agents workflow (Research → Analysis → Writing)
+python 04_connected_agents/main.py
 ```
 
 #### C# Samples

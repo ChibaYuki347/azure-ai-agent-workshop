@@ -84,18 +84,19 @@ Bicep デプロイ後、以下の手動手順を完了：
 お好みの言語を選択してサンプルに従ってください：
 
 #### Python サンプル
+
 ```bash
 cd samples/python
 pip install -r requirements.txt
 
 # 基本エージェント会話
-python basic_agent.py
+python 01_basic_agent/main.py
 
-# RAG 対応エージェント
-python rag_agent.py
+# RAG 対応エージェント（AI Search 連携）
+python 02_ai_search_rag/main.py
 
-# Logic Apps を使ったツール呼び出しエージェント
-python tool_agent.py
+# Connected Agents ワークフロー（リサーチ → 分析 → レポート作成）
+python 04_connected_agents/main.py
 ```
 
 #### C# サンプル

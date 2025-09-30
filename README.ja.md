@@ -29,7 +29,18 @@ Azure AI Foundry Agent Service を使用してプロダクション対応の AI 
 
 ## 🚀 クイックスタート
 
-### 前提条件
+### オプション 1: GitHub Codespaces (推奨)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/ChibaYuki347/azure-ai-agent-workshop)
+
+1. 上記の **"Open in GitHub Codespaces"** ボタンをクリック
+2. 環境のセットアップを待機（2-3分）
+3. すべての依存関係が自動的にインストールされます
+4. [手動設定](#2-手動設定) セクションにジャンプ
+
+### オプション 2: ローカル開発
+
+#### 前提条件
 
 - 以下に十分なクォータを持つ Azure サブスクリプション：
   - Azure OpenAI (GPT-4o, GPT-4o-mini)

@@ -1,0 +1,68 @@
+{
+  "name": "Azure AI Agent Workshop",
+  "image": "mcr.microsoft.com/devcontainers/universal:2-linux",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/azure-cli:1": {
+      "version": "latest",
+      "installBicep": true
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11",
+      "installTools": true
+    },
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "8.0",
+      "installUsingApt": true
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    },
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.flake8",
+        "ms-python.isort",
+        "ms-python.black-formatter",
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-vscode.azurecli",
+        "ms-azuretools.vscode-azureresourcegroups",
+        "ms-azuretools.vscode-azurefunctions",
+        "ms-azuretools.vscode-bicep",
+        "ms-vscode.vscode-json",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "redhat.vscode-yaml"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": false,
+        "python.linting.flake8Enabled": true,
+        "python.formatting.provider": "black",
+        "python.sortImports.args": [
+          "--profile=black"
+        ],
+        "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true,
+        "omnisharp.enableRoslynAnalyzers": true,
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "files.associations": {
+          "*.bicep": "bicep"
+        }
+      }
+    }
+  },
+
+  "forwardPorts": [3000, 5000, 8000, 8080],
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "remoteUser": "codespace"
+}

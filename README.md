@@ -30,7 +30,18 @@ This workshop equips participants with hands-on experience in:
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Option 1: GitHub Codespaces (Recommended)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/ChibaYuki347/azure-ai-agent-workshop)
+
+1. Click the **"Open in GitHub Codespaces"** button above
+2. Wait for the environment to set up (2-3 minutes)
+3. All dependencies will be automatically installed
+4. Jump to [Manual Configuration](#2-manual-configuration) section
+
+### Option 2: Local Development
+
+#### Prerequisites
 
 - Azure subscription with sufficient quota for:
   - Azure OpenAI (GPT-4o, GPT-4o-mini)

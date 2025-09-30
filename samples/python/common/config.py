@@ -4,6 +4,13 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
+# Load .env file if it exists
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv is optional
+
 _ENV_KEYS = {
     "project_endpoint": "PROJECT_ENDPOINT",
     "model_deployment_name": "MODEL_DEPLOYMENT_NAME",

@@ -33,6 +33,8 @@ Azure AI Foundry Agent Service を使用してプロダクション対応の AI 
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/ChibaYuki347/azure-ai-agent-workshop)
 
+🧪 **テスト済み・検証済み**: すべてのPythonサンプルがテストされ、正常に動作することを確認済みです。
+
 1. 上記の **"Open in GitHub Codespaces"** ボタンをクリック
 2. 環境のセットアップを待機（2-3分）
 3. すべての依存関係が自動的にインストールされます

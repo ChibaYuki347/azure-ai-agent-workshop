@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 import requests
-from azure.ai.projects.models import FunctionTool
+from azure.ai.agents.models import FunctionTool
 
 _logger = logging.getLogger(__name__)
 

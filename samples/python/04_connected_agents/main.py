@@ -11,7 +11,7 @@ import asyncio
 import json
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
-from azure.ai.foundry.agents import AgentClient
+from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 
 @dataclass
@@ -51,8 +51,8 @@ class ConnectedAgentsOrchestrator:
             project_connection_string: Azure AI Foundry project connection string
         """
         self.credential = DefaultAzureCredential()
-        self.client = AgentClient.from_connection_string(
-            project_connection_string,
+        self.client = AIProjectClient(
+            endpoint=project_connection_string,
             credential=self.credential
         )
         

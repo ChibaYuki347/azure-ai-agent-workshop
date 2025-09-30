@@ -34,6 +34,8 @@ This workshop equips participants with hands-on experience in:
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/ChibaYuki347/azure-ai-agent-workshop)
 
+🧪 **Tested & Verified**: All Python samples have been tested and verified to work correctly.
+
 1. Click the **"Open in GitHub Codespaces"** button above
 2. Wait for the environment to set up (2-3 minutes)
 3. All dependencies will be automatically installed

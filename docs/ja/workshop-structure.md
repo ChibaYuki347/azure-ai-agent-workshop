@@ -72,7 +72,7 @@
 **S12. 練習課題**
 
 * **入れる要素**：プロンプト指示の工夫（スタイル／根拠要求／手順化）
-* **Notes**：後の評価モジュールで“タスク遵守”を計測する前振り。
+* **Notes**：後の評価モジュールで Azure AI Evaluation の Agent evaluators（Task Adherence / Tool Call Accuracy など）で成果を測定する前振り。([Microsoft Learn][16])
 
 ---
 
@@ -101,7 +101,7 @@
 **S17. チューニング（埋め込み・フィールド設計・キャッシュ）**
 
 * **入れる要素**：インデックス設計のチェックリスト
-* **Notes**：“Agent to Agent + Search”パターンのセットアップガイドを参照に。([Microsoft Learn][8])
+* **Notes**：“Agent to Agent + Search”パターンのセットアップガイドを参照にしつつ、Azure AI Evaluation の RAG evaluators（Groundedness / Response Completeness / Retrieval）で効果検証。([Microsoft Learn][8], [Microsoft Learn][15])
 
 ---
 
@@ -160,7 +160,7 @@
 **S26. 責務・SLO設計**
 
 * **入れる要素**：Agent別KPI（成功率、Tool Call成功率、遅延）
-* **Notes**：SLOは後述のObservabilityで計測・可視化。([Microsoft Learn][12])
+* **Notes**：SLOは後述のObservabilityで計測・可視化し、Azure AI Evaluation の Agent evaluators（Intent Resolution / Tool Call Accuracy / Task Adherence）のスコアをKPIに活用。([Microsoft Learn][12], [Microsoft Learn][16])
 
 **S27. ハンズオン：Connected Agentsの構成**
 
@@ -169,27 +169,27 @@
 
 ---
 
-### モジュールH：Evaluation（Prompt flow）
+### モジュールH：Evaluation（Azure AI Evaluation）
 
-**S28. なぜ評価が必要か**
+#### S28. なぜ評価が必要か（改訂）
 
-* **入れる要素**：**Task Adherence / Groundedness / Tool Accuracy**などの指標一覧
-* **Notes**：Prompt flowの**Evaluation flow**種類とメトリクスの全体像。([Microsoft Learn][13])
+* **入れる要素**：Quality（Relevance / Coherence / Fluency / Similarity）、RAG特有（Groundedness / Response Completeness / Retrieval）、Safety（Violence / Sexual / Self-harm / Hate など）、Agent特有（Intent Resolution / Tool Call Accuracy / Task Adherence）の指標カテゴリ。
+* **Notes**：Azure AI Evaluation がこれらの指標を標準で提供し、評価結果をプロジェクトに記録して継続改善に役立つ点を強調。([Microsoft Learn][13], [Microsoft Learn][15], [Microsoft Learn][16])
 
-**S29. Evaluation flowの作り方**
+#### S29. 評価の作り方（UI / SDK / クラウド）
 
-* **入れる要素**：テストセット→Batch評価→メトリクス比較の図
-* **Notes**：バッチ評価と履歴比較のUI解説。([Microsoft Learn][14])
+* **入れる要素**：UIウィザードでデータセット・評価対象・メトリクスを指定→ラン比較、SDK（ローカル）で`azure-ai-evaluation`の`evaluate()`を呼び出す手順、クラウド評価（Preview）でチーム共有できる評価記録を作成する流れ。
+* **Notes**：UI/SDK/クラウドの使い分け（規模・自動化・共同作業）を整理し、評価結果はAzure AIプロジェクトで一元管理できることを伝える。([Microsoft Learn][13], [Microsoft Learn][14], [Microsoft Learn][15])
 
-**S30. デモ：RAG回答の評価**
+#### S30. デモ：RAG回答の評価（改訂）
 
-* **入れる要素**：評価結果ダッシュボード（Precision/Recallに相当する指標）
-* **Notes**：改善ループ（プロンプト更新／ツール設定見直し／索引チューニング）。([Microsoft Learn][15])
+* **入れる要素**：質問・期待回答・コンテキストを含むデータセットに対し、Groundedness / Response Completeness / Retrieval を選択して実行し、パス/フェイルと理由文を確認するフロー。
+* **Notes**：評価結果から改善アクション（プロンプト更新／ツール設定／索引チューニング）へつなげるサイクルを示す。([Microsoft Learn][15])
 
-**S31. 手動評価とA/B比較のヒント**
+#### S31. 手動評価とA/B比較のヒント（改訂）
 
-* **入れる要素**：手動評価UIのスクショ案／A/B設計チェック
-* **Notes**：実務では自動＋手動の併用が有効。([Azure][16])
+* **入れる要素**：ポータルのEvaluationページでのしきい値設定、サンプル詳細のレビュー、ラン比較UIによるA/B評価の手順。
+* **Notes**：自動評価に手動レビューを組み合わせ、意思決定の裏付けとしてラン比較ダッシュボードを活用する。([Microsoft Learn][13])
 
 ---
 
@@ -203,7 +203,7 @@
 **S33. セットアップの流れ**
 
 * **入れる要素**：プロジェクト→Observability有効化→App Insights接続のフロー図
-* **Notes**：監視は“継続運用の前提”。([Microsoft Learn][12])
+* **Notes**：監視は“継続運用の前提”。Azure AI Evaluation の結果はプロジェクトに記録され、ポータルでラン比較や詳細ドリルダウンが可能。([Microsoft Learn][12], [Microsoft Learn][13])
 
 **S34. ダッシュボード例（アラート/診断）**
 

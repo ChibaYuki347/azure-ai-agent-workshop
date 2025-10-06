@@ -72,7 +72,7 @@
 **S12. Practice Exercises**
 
 * **Key Elements**: Prompt instruction techniques (style / evidence requirements / step-by-step)
-* **Notes**: Setup for later evaluation module to measure "task adherence".
+* **Notes**: Set up for the Day 2 evaluation module where Azure AI Evaluation agent evaluators (Task Adherence / Tool Call Accuracy, etc.) will be used to score results. ([Microsoft Learn][16])
 
 ---
 
@@ -101,7 +101,7 @@
 **S17. Tuning (Embeddings, Field Design, Caching)**
 
 * **Key Elements**: Index design checklist
-* **Notes**: Reference "Agent to Agent + Search" pattern setup guide. ([Microsoft Learn][8])
+* **Notes**: Reference "Agent to Agent + Search" pattern setup guide and plan to validate improvements with Azure AI Evaluation RAG evaluators (Groundedness / Response Completeness / Retrieval). ([Microsoft Learn][8], [Microsoft Learn][15])
 
 ---
 
@@ -160,7 +160,7 @@
 **S26. Responsibility & SLO Design**
 
 * **Key Elements**: Agent-specific KPIs (success rate, tool call success rate, latency)
-* **Notes**: SLOs are measured and visualized with later Observability. ([Microsoft Learn][12])
+* **Notes**: SLOs are measured and visualized with later Observability, and Azure AI Evaluation agent evaluators (Intent Resolution / Tool Call Accuracy / Task Adherence) provide supporting quality metrics. ([Microsoft Learn][12], [Microsoft Learn][16])
 
 **S27. Hands-on: Connected Agents Configuration**
 
@@ -169,27 +169,27 @@
 
 ---
 
-### Module H: Evaluation (Prompt flow)
+### Module H: Evaluation (Azure AI Evaluation)
 
-**S28. Why Evaluation is Necessary**
+#### S28. Why Evaluation is Necessary (Updated)
 
-* **Key Elements**: Metric list like **Task Adherence / Groundedness / Tool Accuracy**
-* **Notes**: Overall picture of Prompt flow **Evaluation flow** types and metrics. ([Microsoft Learn][13])
+* **Key Elements**: Metric categories for Quality (Relevance / Coherence / Fluency / Similarity), RAG-specific (Groundedness / Response Completeness / Retrieval), Safety (Violence / Sexual / Self-harm / Hate, etc.), and Agent-specific (Intent Resolution / Tool Call Accuracy / Task Adherence).
+* **Notes**: Emphasize that Azure AI Evaluation offers these metrics out of the box and records results in the project for ongoing improvement. ([Microsoft Learn][13], [Microsoft Learn][15], [Microsoft Learn][16])
 
-**S29. How to Create Evaluation Flows**
+#### S29. How to Run Evaluations (UI / SDK / Cloud)
 
-* **Key Elements**: Test set → batch evaluation → metrics comparison diagram
-* **Notes**: Batch evaluation and history comparison UI explanation. ([Microsoft Learn][14])
+* **Key Elements**: UI wizard steps to choose dataset / target / metrics and compare runs, SDK (local) flow calling `azure-ai-evaluation` `evaluate()`, and cloud evaluations (preview) to share evaluation records with the team.
+* **Notes**: Clarify when to use UI, SDK, or cloud evaluations (scale, automation, collaboration) and that Azure AI projects keep evaluation outputs centralized. ([Microsoft Learn][13], [Microsoft Learn][14], [Microsoft Learn][15])
 
-**S30. Demo: RAG Response Evaluation**
+#### S30. Demo: Evaluating a RAG Response (Updated)
 
-* **Key Elements**: Evaluation results dashboard (metrics equivalent to Precision/Recall)
-* **Notes**: Improvement loop (prompt updates / tool setting reviews / index tuning). ([Microsoft Learn][15])
+* **Key Elements**: Dataset containing question, expected answer, and context; select Groundedness / Response Completeness / Retrieval; review pass/fail status and rationales.
+* **Notes**: Show how evaluation insights inform improvement actions (prompt updates / tool settings / index tuning). ([Microsoft Learn][15])
 
-**S31. Manual Evaluation and A/B Comparison Tips**
+#### S31. Manual Review and A/B Comparison Tips (Updated)
 
-* **Key Elements**: Manual evaluation UI screenshots / A/B design checks
-* **Notes**: Practical use combines automatic + manual evaluation. ([Azure][16])
+* **Key Elements**: Portal Evaluation page features like threshold settings, sample-level review, and run comparison UI for A/B testing.
+* **Notes**: Combine automated scoring with manual inspection, using the comparison dashboard to support decisions. ([Microsoft Learn][13])
 
 ---
 
@@ -203,7 +203,7 @@
 **S33. Setup Flow**
 
 * **Key Elements**: Project → Enable Observability → App Insights connection flow diagram
-* **Notes**: Monitoring is "prerequisite for continuous operations". ([Microsoft Learn][12])
+* **Notes**: Monitoring is "prerequisite for continuous operations" and Azure AI Evaluation run data is captured in the project for comparison and drilldown. ([Microsoft Learn][12], [Microsoft Learn][13])
 
 **S34. Dashboard Examples (Alerts/Diagnostics)**
 

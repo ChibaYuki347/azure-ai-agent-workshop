@@ -4,7 +4,7 @@ This example demonstrates how to use **Azure AI Agent Service Connected Agents**
 
 ## Architecture Overview
 
-```
+```text
 User Request
      ↓
 Main Agent (Orchestrator)
@@ -34,6 +34,7 @@ Research Agent → Analysis Agent → Writing Agent
 First, create each specialized agent in Azure AI Foundry:
 
 #### Research Agent Configuration
+
 ```json
 {
   "name": "research-agent",
@@ -45,6 +46,7 @@ First, create each specialized agent in Azure AI Foundry:
 ```
 
 #### Analysis Agent Configuration
+
 ```json
 {
   "name": "analysis-agent", 
@@ -56,6 +58,7 @@ First, create each specialized agent in Azure AI Foundry:
 ```
 
 #### Writing Agent Configuration
+
 ```json
 {
   "name": "writing-agent",
@@ -76,14 +79,17 @@ In the Main Agent, add the three agents as Connected Agents:
 4. Add each agent with delegation instructions:
 
 **Research Agent Connection:**
+
 - **When to use**: "When the user asks for research, information gathering, or fact-finding about any topic"
 - **Instructions**: "Delegate research tasks to gather comprehensive information with proper citations"
 
 **Analysis Agent Connection:**
+
 - **When to use**: "When research data needs analysis, comparison, or insight extraction"
 - **Instructions**: "Analyze research findings to identify patterns, relationships, and key insights"
 
 **Writing Agent Connection:**
+
 - **When to use**: "When analysis results need to be formatted into a coherent report"
 - **Instructions**: "Create well-structured reports with proper formatting and citations"
 
@@ -114,16 +120,28 @@ def handle_user_request(user_input):
         "writing-agent", 
         f"Create report from analysis: {analysis_results}"
     )
-    
     return final_report
 ```
+
+### CLI デモの実行方法
+
+Python サンプルでは [Typer](https://typer.tiangolo.com/) を用いた CLI (`python -m samples.python.04_connected_agents.main`) を提供しています。
+
+```bash
+# 事前に PROJECT_ENDPOINT / MODEL_DEPLOYMENT_NAME などを設定
+python -m samples.python.04_connected_agents.main info
+python -m samples.python.04_connected_agents.main run --topic "Impact of AI on supply chains"
+```
+
+必要に応じて、環境変数 `WORKSHOP_RESEARCH_AGENT_ID` / `WORKSHOP_ANALYSIS_AGENT_ID` / `WORKSHOP_WRITING_AGENT_ID` を指定すると、Azure AI Foundry 上の任意の Agent ID を CLI から参照できます。
 
 ## Agent Instructions
 
 ### Research Agent Instructions
 
 **English:**
-```
+
+```text
 You are the "Research Agent."
 Your role is to perform comprehensive information gathering using tools such as Bing Search or Azure's Deep Research. Given a user's theme or keywords, you should collect relevant, credible sources and return structured research output.
 
@@ -139,7 +157,8 @@ If the user specifies period, language, or depth requirements, follow those cons
 ```
 
 **Japanese:**
-```
+
+```text
 あなたは "Research Agent" です。
 あなたの役割は、与えられたテーマ・キーワードをもとに、信頼できる情報源を Bing 検索や Deep Research ツールを使って調べ、構造化された調査結果を返すことです。
 
@@ -157,7 +176,8 @@ If the user specifies period, language, or depth requirements, follow those cons
 ### Analysis Agent Instructions
 
 **English:**
-```
+
+```text
 You are the "Analysis Agent."
 Your role is to take research output and perform deeper analytical work, such as:
 
@@ -171,7 +191,8 @@ Present your output in a structured format with sections such as "Analysis Resul
 ```
 
 **Japanese:**
-```
+
+```text
 あなたは "Analysis Agent" です。
 あなたの役割は、Research Agent から提供された調査結果をもとに、以下のような分析を行うことです：
 
@@ -187,7 +208,8 @@ Present your output in a structured format with sections such as "Analysis Resul
 ### Writing Agent Instructions
 
 **English:**
-```
+
+```text
 You are the "Writing Agent."
 Your role is to take analysis output and produce a polished report or document in the user's desired style/format.
 
@@ -205,7 +227,8 @@ If the user specifies a format (academic paper, business report, blog post), adh
 ```
 
 **Japanese:**
-```
+
+```text
 あなたは "Writing Agent" です。
 あなたの役割は、Analysis Agent が構成した分析アウトプットを元に、指定スタイル・形式でレポートや文章を作成することです。
 
@@ -225,7 +248,8 @@ If the user specifies a format (academic paper, business report, blog post), adh
 ### Main Agent Instructions
 
 **English:**
-```
+
+```text
 You are the "Main Agent" (orchestrator).
 You coordinate sub-agents to complete research and reporting tasks as follows:
 
@@ -240,7 +264,8 @@ Ensure that the sub-task instructions you send to each agent match the expected 
 ```
 
 **Japanese:**
-```
+
+```text
 あなたは "Main Agent"（統括エージェント）です。
 ユーザーから来る指示を理解し、以下の流れでサブエージェントにタスクを割り振って統合出力を返してください。
 
@@ -257,11 +282,13 @@ Ensure that the sub-task instructions you send to each agent match the expected 
 ## Implementation Considerations
 
 ### Tool Configuration
+
 - **Research Agent**: Attach Bing Search and Deep Research tools for web information gathering
 - **Analysis Agent**: Attach Python Code Interpreter for statistical analysis and calculations
 - **Writing Agent**: No special tools needed, focuses on text generation and formatting
 
 ### Data Flow Format
+
 Consider using structured JSON for inter-agent communication:
 
 ```json
@@ -281,12 +308,14 @@ Consider using structured JSON for inter-agent communication:
 ```
 
 ### Error Handling
+
 - Handle cases where research returns insufficient data
 - Manage conflicting information from sources
 - Provide fallback strategies for failed tool calls
 - Include confidence levels in outputs
 
 ### Monitoring & Observability
+
 - Track execution time for each agent
 - Monitor tool usage and success rates
 - Log intermediate outputs for debugging
@@ -295,7 +324,8 @@ Consider using structured JSON for inter-agent communication:
 ## Usage Examples
 
 ### Business Research Example
-```
+
+```text
 User: "Research the impact of AI on supply chain management and create a business report"
 
 Main Agent Flow:
@@ -305,7 +335,8 @@ Main Agent Flow:
 ```
 
 ### Academic Research Example
-```
+
+```text
 User: "Investigate recent developments in quantum computing algorithms for a literature review"
 
 Main Agent Flow:

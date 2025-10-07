@@ -1,419 +1,266 @@
-"""
-Connected Agents Orchestration Example
-Research → Analysis → Writing Agent Workflow
+"""Connected Agents demo CLI for the workshop."""
 
-This example demonstrates how to use Azure AI Agent Service with Connected Agents
-to implement a multi-agent workflow for research, analysis, and report writing.
-"""
+from __future__ import annotations
 
-import os
-import asyncio
-import json
-from typing import Dict, Any, Optional
-from dataclasses import dataclass
+import textwrap
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Optional
+
+import typer
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
+
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 
-@dataclass
+from ..common import configure_logging, load_config
+
+app = typer.Typer(help="Connected Agents orchestration demo")
+console = Console()
+
+
+@dataclass(slots=True)
 class ResearchRequest:
-    """Structure for research requests"""
     topic: str
     scope: str = "comprehensive"
     time_period: Optional[str] = None
     language: str = "English"
     depth: str = "moderate"
     sources_required: int = 5
+    output_format: str = "business_report"
 
-@dataclass 
+
+@dataclass(slots=True)
+class WorkflowArtifacts:
+    research_thread: Optional[str] = None
+    analysis_thread: Optional[str] = None
+    writing_thread: Optional[str] = None
+    report_path: Optional[Path] = None
+
+
+@dataclass(slots=True)
 class WorkflowResult:
-    """Structure for workflow results"""
     success: bool
-    research_data: Optional[Dict[str, Any]] = None
-    analysis_results: Optional[Dict[str, Any]] = None
+    message: str
+    research_content: Optional[str] = None
+    analysis_content: Optional[str] = None
     final_report: Optional[str] = None
-    error_message: Optional[str] = None
+    artifacts: WorkflowArtifacts = field(default_factory=WorkflowArtifacts)
+
 
 class ConnectedAgentsOrchestrator:
-    """
-    Orchestrates a multi-agent workflow for research, analysis, and writing.
-    
-    This class coordinates three specialized agents:
-    - Research Agent: Gathers information from web sources
-    - Analysis Agent: Analyzes and synthesizes research data  
-    - Writing Agent: Creates formatted reports
-    """
-    
-    def __init__(self, project_connection_string: str):
-        """
-        Initialize the orchestrator with Azure AI connection.
-        
-        Args:
-            project_connection_string: Azure AI Foundry project connection string
-        """
+    def __init__(self) -> None:
+        configure_logging()
+        self.config = load_config()
         self.credential = DefaultAzureCredential()
-        self.client = AIProjectClient(
-            endpoint=project_connection_string,
-            credential=self.credential
-        )
-        
-        # Agent IDs - these should be created in Azure AI Foundry first
-        self.research_agent_id = "research-agent"
-        self.analysis_agent_id = "analysis-agent" 
-        self.writing_agent_id = "writing-agent"
-        
-    async def execute_research_workflow(
-        self, 
-        request: ResearchRequest,
-        report_format: str = "business_report"
-    ) -> WorkflowResult:
-        """
-        Execute the complete research workflow.
-        
-        Args:
-            request: Research request parameters
-            report_format: Desired output format (business_report, academic_paper, blog_post)
-            
-        Returns:
-            WorkflowResult containing all outputs or error information
-        """
+        self.artifacts = WorkflowArtifacts()
+        self.client: Optional[AIProjectClient] = None
+
+        self.research_agent_id = self.config.connected_research_agent_id or "research-agent"
+        self.analysis_agent_id = self.config.connected_analysis_agent_id or "analysis-agent"
+        self.writing_agent_id = self.config.connected_writing_agent_id or "writing-agent"
+
+    def run(self, request: ResearchRequest) -> WorkflowResult:
         try:
-            # Step 1: Research Phase
-            print(f"🔍 Starting research on: {request.topic}")
-            research_data = await self._execute_research_phase(request)
-            
-            if not research_data:
-                return WorkflowResult(
-                    success=False,
-                    error_message="Research phase failed to gather sufficient data"
-                )
-            
-            # Step 2: Analysis Phase  
-            print("📊 Analyzing research data...")
-            analysis_results = await self._execute_analysis_phase(research_data)
-            
-            if not analysis_results:
-                return WorkflowResult(
-                    success=False,
-                    research_data=research_data,
-                    error_message="Analysis phase failed to process research data"
-                )
-            
-            # Step 3: Writing Phase
-            print("📝 Generating final report...")
-            final_report = await self._execute_writing_phase(
-                analysis_results, 
-                report_format
-            )
-            
-            if not final_report:
-                return WorkflowResult(
-                    success=False,
-                    research_data=research_data,
-                    analysis_results=analysis_results,
-                    error_message="Writing phase failed to generate report"
-                )
-            
-            print("✅ Workflow completed successfully!")
-            return WorkflowResult(
-                success=True,
-                research_data=research_data,
-                analysis_results=analysis_results,
-                final_report=final_report
-            )
-            
-        except Exception as e:
-            return WorkflowResult(
-                success=False,
-                error_message=f"Workflow error: {str(e)}"
-            )
-    
-    async def _execute_research_phase(self, request: ResearchRequest) -> Optional[Dict[str, Any]]:
-        """Execute research phase using Research Agent."""
-        
-        research_prompt = f"""
-        Please conduct comprehensive research on the following topic:
-        
-        Topic: {request.topic}
-        Scope: {request.scope}
-        Time Period: {request.time_period or "Recent developments"}
-        Language: {request.language}
-        Depth: {request.depth}
-        Minimum Sources: {request.sources_required}
-        
-        Please provide:
-        1. A summary of key findings
-        2. List of credible sources with URLs
-        3. Important data points and statistics
-        4. Different perspectives or viewpoints
-        5. Any limitations or gaps in available information
-        
-        Format your response as structured data that can be easily processed
-        by the analysis agent.
-        """
-        
-        try:
-            # Create thread for research agent
-            research_thread = self.client.create_thread()
-            
-            # Send research request
-            message = self.client.create_message(
-                thread_id=research_thread.id,
-                role="user",
-                content=research_prompt
-            )
-            
-            # Run the research agent
-            run = self.client.create_run(
-                thread_id=research_thread.id,
-                agent_id=self.research_agent_id
-            )
-            
-            # Wait for completion
-            completed_run = self.client.wait_for_run(
-                thread_id=research_thread.id,
-                run_id=run.id
-            )
-            
-            if completed_run.status == "completed":
-                # Get the research results
-                messages = self.client.list_messages(
-                    thread_id=research_thread.id,
-                    order="desc",
-                    limit=1
-                )
-                
-                if messages and messages[0].role == "assistant":
-                    research_content = messages[0].content[0].text.value
-                    return {
-                        "raw_content": research_content,
-                        "thread_id": research_thread.id,
-                        "request_params": request.__dict__
-                    }
-            
-            return None
-            
-        except Exception as e:
-            print(f"Research phase error: {e}")
-            return None
-    
-    async def _execute_analysis_phase(self, research_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Execute analysis phase using Analysis Agent."""
-        
-        analysis_prompt = f"""
-        Please analyze the following research data and provide structured insights:
-        
-        Research Content:
-        {research_data['raw_content']}
-        
-        Please provide:
-        1. Key themes and patterns identified
-        2. Comparative analysis of different sources/viewpoints
-        3. Strengths and weaknesses of the findings
-        4. Causal relationships or correlations discovered
-        5. Gaps in knowledge or contradictory information
-        6. Strategic insights and implications
-        7. Recommendations for further investigation
-        
-        Structure your analysis so it can be easily used by a writing agent
-        to create a comprehensive report.
-        """
-        
-        try:
-            # Create thread for analysis agent
-            analysis_thread = self.client.create_thread()
-            
-            # Send analysis request
-            message = self.client.create_message(
-                thread_id=analysis_thread.id,
-                role="user", 
-                content=analysis_prompt
-            )
-            
-            # Run the analysis agent
-            run = self.client.create_run(
-                thread_id=analysis_thread.id,
-                agent_id=self.analysis_agent_id
-            )
-            
-            # Wait for completion
-            completed_run = self.client.wait_for_run(
-                thread_id=analysis_thread.id,
-                run_id=run.id
-            )
-            
-            if completed_run.status == "completed":
-                # Get the analysis results
-                messages = self.client.list_messages(
-                    thread_id=analysis_thread.id,
-                    order="desc",
-                    limit=1
-                )
-                
-                if messages and messages[0].role == "assistant":
-                    analysis_content = messages[0].content[0].text.value
-                    return {
-                        "analysis_content": analysis_content,
-                        "thread_id": analysis_thread.id,
-                        "source_research": research_data
-                    }
-            
-            return None
-            
-        except Exception as e:
-            print(f"Analysis phase error: {e}")
-            return None
-    
-    async def _execute_writing_phase(
-        self, 
-        analysis_results: Dict[str, Any], 
-        report_format: str
-    ) -> Optional[str]:
-        """Execute writing phase using Writing Agent."""
-        
-        format_instructions = {
-            "business_report": """
-            Create a professional business report with:
-            - Executive Summary
-            - Background/Context
-            - Key Findings
-            - Analysis & Insights
-            - Recommendations
-            - Conclusion
-            Use clear headings, bullet points, and professional tone.
-            """,
-            "academic_paper": """
-            Create an academic-style paper with:
-            - Abstract
-            - Introduction
-            - Literature Review/Background
-            - Methodology (research approach)
-            - Results/Findings
-            - Discussion
-            - Conclusion
-            - References
-            Use formal academic tone with proper citations.
-            """,
-            "blog_post": """
-            Create an engaging blog post with:
-            - Compelling headline
-            - Introduction hook
-            - Main content with subheadings
-            - Key takeaways
-            - Call to action
-            Use conversational tone and engaging style.
-            """
-        }
-        
-        writing_prompt = f"""
-        Please create a comprehensive report based on the following analysis:
-        
-        Analysis Results:
-        {analysis_results['analysis_content']}
-        
-        Report Format: {report_format}
-        
-        Format Instructions:
-        {format_instructions.get(report_format, format_instructions['business_report'])}
-        
-        Please ensure:
-        - All key points from the analysis are covered
-        - The report flows logically
-        - Sources are referenced where appropriate
-        - The tone matches the requested format
-        - The content is well-structured and professional
-        """
-        
-        try:
-            # Create thread for writing agent
-            writing_thread = self.client.create_thread()
-            
-            # Send writing request
-            message = self.client.create_message(
-                thread_id=writing_thread.id,
-                role="user",
-                content=writing_prompt
-            )
-            
-            # Run the writing agent
-            run = self.client.create_run(
-                thread_id=writing_thread.id,
-                agent_id=self.writing_agent_id
-            )
-            
-            # Wait for completion
-            completed_run = self.client.wait_for_run(
-                thread_id=writing_thread.id,
-                run_id=run.id
-            )
-            
-            if completed_run.status == "completed":
-                # Get the final report
-                messages = self.client.list_messages(
-                    thread_id=writing_thread.id,
-                    order="desc",
-                    limit=1
-                )
-                
-                if messages and messages[0].role == "assistant":
-                    return messages[0].content[0].text.value
-            
-            return None
-            
-        except Exception as e:
-            print(f"Writing phase error: {e}")
+            with AIProjectClient(endpoint=self.config.project_endpoint, credential=self.credential) as client:
+                self.client = client
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    transient=True,
+                ) as progress:
+                    research_task = progress.add_task("Gathering research", start=False)
+                    analysis_task = progress.add_task("Synthesizing insights", start=False)
+                    writing_task = progress.add_task("Composing report", start=False)
+
+                    progress.start_task(research_task)
+                    research = self._run_agent(
+                        thread_name="research",
+                        agent_id=self.research_agent_id,
+                        prompt=self._build_research_prompt(request),
+                    )
+                    progress.update(research_task, completed=100)
+
+                    if not research:
+                        return WorkflowResult(False, "Research phase failed", artifacts=self.artifacts)
+
+                    progress.start_task(analysis_task)
+                    analysis = self._run_agent(
+                        thread_name="analysis",
+                        agent_id=self.analysis_agent_id,
+                        prompt=self._build_analysis_prompt(research),
+                    )
+                    progress.update(analysis_task, completed=100)
+
+                    if not analysis:
+                        return WorkflowResult(
+                            False,
+                            "Analysis phase failed",
+                            research_content=research,
+                            artifacts=self.artifacts,
+                        )
+
+                    progress.start_task(writing_task)
+                    report = self._run_agent(
+                        thread_name="writing",
+                        agent_id=self.writing_agent_id,
+                        prompt=self._build_writing_prompt(analysis, request.output_format),
+                    )
+                    progress.update(writing_task, completed=100)
+
+                    if not report:
+                        return WorkflowResult(
+                            False,
+                            "Writing phase failed",
+                            research_content=research,
+                            analysis_content=analysis,
+                            artifacts=self.artifacts,
+                        )
+
+                    path = Path("connected_agents_report.md")
+                    path.write_text(report, encoding="utf-8")
+                    self.artifacts.report_path = path
+
+                    return WorkflowResult(
+                        True,
+                        "Workflow completed",
+                        research_content=research,
+                        analysis_content=analysis,
+                        final_report=report,
+                        artifacts=self.artifacts,
+                    )
+
+        except Exception as exc:  # pragma: no cover - demo scenario
+            return WorkflowResult(False, f"Unexpected error: {exc}", artifacts=self.artifacts)
+        finally:
+            self.client = None
+
+    def _run_agent(self, thread_name: str, agent_id: str, prompt: str) -> Optional[str]:
+        if not hasattr(self, "client") or self.client is None:
+            raise RuntimeError("Client is not initialized")
+        thread = self.client.agents.threads.create()
+        setattr(self.artifacts, f"{thread_name}_thread", thread.id)
+
+        self.client.agents.messages.create(thread_id=thread.id, role="user", content=prompt)
+        run = self.client.agents.runs.create_and_process(thread_id=thread.id, agent_id=agent_id)
+
+        if run.status != "completed":
+            console.log(f"Run failed for {thread_name}: {run.last_error}")
             return None
 
-async def main():
-    """
-    Example usage of the Connected Agents orchestrator.
-    """
-    # Configuration
-    project_connection_string = os.getenv("AZURE_AI_PROJECT_CONNECTION_STRING")
-    if not project_connection_string:
-        print("❌ Please set AZURE_AI_PROJECT_CONNECTION_STRING environment variable")
-        return
-    
-    # Initialize orchestrator
-    orchestrator = ConnectedAgentsOrchestrator(project_connection_string)
-    
-    # Define research request
-    research_request = ResearchRequest(
-        topic="Impact of Artificial Intelligence on Supply Chain Management",
-        scope="comprehensive",
-        time_period="2022-2024",
-        language="English",
-        depth="detailed",
-        sources_required=8
-    )
-    
-    # Execute workflow
-    print("🚀 Starting Connected Agents workflow...")
-    result = await orchestrator.execute_research_workflow(
-        request=research_request,
-        report_format="business_report"
-    )
-    
-    # Handle results
-    if result.success:
-        print("✅ Workflow completed successfully!")
-        print("\n" + "="*50)
-        print("FINAL REPORT")
-        print("="*50)
-        print(result.final_report)
-        
-        # Optionally save to file
-        with open("connected_agents_report.md", "w", encoding="utf-8") as f:
-            f.write(result.final_report)
-        print(f"\n📄 Report saved to: connected_agents_report.md")
-        
+        messages = list(self.client.agents.messages.list(thread.id, order="desc", limit=1))
+        if messages and messages[0].role == "assistant":
+            return messages[0].content[0].text.value
+        return None
+
+    @staticmethod
+    def _build_research_prompt(request: ResearchRequest) -> str:
+        return textwrap.dedent(
+            f"""
+            You are a research specialist. Investigate the topic below and return structured JSON.
+
+            Topic: {request.topic}
+            Scope: {request.scope}
+            Time period: {request.time_period or "recent developments"}
+            Language: {request.language}
+            Depth: {request.depth}
+            Minimum sources: {request.sources_required}
+
+            Return a JSON object with keys: summary, sources (list with title/url/insight),
+            statistics, viewpoints, gaps.
+            """
+        ).strip()
+
+    @staticmethod
+    def _build_analysis_prompt(research_content: str) -> str:
+        return textwrap.dedent(
+            f"""
+            You are an analysis specialist. You will receive JSON from the research agent.
+            Produce a JSON object containing:
+            - themes (list)
+            - strengths
+            - weaknesses
+            - contradictions
+            - implications
+            - recommendations
+
+            Research JSON:
+            {research_content}
+            """
+        ).strip()
+
+    @staticmethod
+    def _build_writing_prompt(analysis_content: str, format_name: str) -> str:
+        format_hints = {
+            "business_report": "Executive summary, key findings, recommendations",
+            "academic_paper": "Abstract, introduction, methodology, results, conclusion",
+            "blog_post": "Hook, narrative flow, key takeaways, call to action",
+        }
+        hint = format_hints.get(format_name, format_hints["business_report"])
+        return textwrap.dedent(
+            f"""
+            You are a writing specialist. Create a polished document using the structure:
+            {hint}
+
+            Analysis JSON:
+            {analysis_content}
+            """
+        ).strip()
+
+
+def _render_summary(result: WorkflowResult) -> None:
+    table = Table(title="Connected Agents workflow summary", show_lines=True)
+    table.add_column("Phase")
+    table.add_column("Status")
+    table.add_column("Thread ID")
+
+    table.add_row("Research", "✅" if result.research_content else "❌", result.artifacts.research_thread or "-")
+    table.add_row("Analysis", "✅" if result.analysis_content else "❌", result.artifacts.analysis_thread or "-")
+    table.add_row("Writing", "✅" if result.final_report else "❌", result.artifacts.writing_thread or "-")
+
+    console.print(table)
+
+    if result.artifacts.report_path:
+        console.print(f"[bold green]Report saved to[/]: {result.artifacts.report_path}")
+
+
+@app.command(help="Run the full multi-agent workflow")
+def run(
+    topic: str = typer.Option(..., prompt=True, help="Research topic"),
+    sources: int = typer.Option(5, min=1, max=12, help="Minimum number of sources"),
+    depth: str = typer.Option("moderate", help="Research depth"),
+    output: str = typer.Option("business_report", help="Output format"),
+) -> None:
+    request = ResearchRequest(topic=topic, sources_required=sources, depth=depth, output_format=output)
+    orchestrator = ConnectedAgentsOrchestrator()
+
+    result = orchestrator.run(request)
+    _render_summary(result)
+
+    if result.final_report:
+        console.print(Panel(result.final_report, title="Final report", expand=False))
     else:
-        print(f"❌ Workflow failed: {result.error_message}")
-        
-        # Show partial results if available
-        if result.research_data:
-            print("\n📊 Research data was collected successfully")
-        if result.analysis_results:
-            print("📈 Analysis was completed successfully")
+        console.print(f"[red]{result.message}[/red]")
+
+
+@app.command(help="Show currently configured agent IDs")
+def info() -> None:
+    orchestrator = ConnectedAgentsOrchestrator()
+    table = Table(title="Connected agents configuration")
+    table.add_column("Role")
+    table.add_column("Agent ID")
+    table.add_row("Research", orchestrator.research_agent_id)
+    table.add_row("Analysis", orchestrator.analysis_agent_id)
+    table.add_row("Writing", orchestrator.writing_agent_id)
+    console.print(table)
+
+
+def main() -> None:
+    app()
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

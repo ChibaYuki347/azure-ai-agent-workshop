@@ -21,6 +21,9 @@ _ENV_KEYS = {
     "subscription_id": "AZURE_SUBSCRIPTION_ID",
     "resource_group_name": "AZURE_RESOURCE_GROUP_NAME",
     "evaluation_project_endpoint": "AZURE_AI_PROJECT",
+    "connected_research_agent_id": "WORKSHOP_RESEARCH_AGENT_ID",
+    "connected_analysis_agent_id": "WORKSHOP_ANALYSIS_AGENT_ID",
+    "connected_writing_agent_id": "WORKSHOP_WRITING_AGENT_ID",
 }
 
 
@@ -37,6 +40,9 @@ class WorkshopConfig:
     subscription_id: Optional[str] = None
     resource_group_name: Optional[str] = None
     evaluation_project_endpoint: Optional[str] = None
+    connected_research_agent_id: Optional[str] = None
+    connected_analysis_agent_id: Optional[str] = None
+    connected_writing_agent_id: Optional[str] = None
 
     @property
     def has_search(self) -> bool:

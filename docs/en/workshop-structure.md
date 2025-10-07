@@ -322,6 +322,516 @@
 
 ---
 
+## Day2 Demo Sample Code (Python / .NET)
+
+The following end-to-end snippets map directly to Day2 modules (evaluation, observability, safety, operations). Apply the steps in order to recreate demos for S25–S50.
+
+### 0) Prerequisites (Shared)
+
+```bash
+# Azure AI Foundry Project
+export PROJECT_ENDPOINT="https://<xxx>.services.ai.azure.com/api/projects/<project-name>"
+export MODEL_DEPLOYMENT_NAME="<your-model-deployment-name>"
+
+# Application Insights / Log Analytics
+export APPLICATIONINSIGHTS_CONNECTION_STRING="<App Insights connection string>"
+export LOGS_WORKSPACE_ID="<Log Analytics Workspace ID>"
+
+# Azure AI Content Safety
+export CONTENT_SAFETY_ENDPOINT="https://<your-contentsafety>.cognitiveservices.azure.com"
+export CONTENT_SAFETY_KEY="<content-safety-key>"
+
+# (Optional) APIM-backed rate control demo
+export APIM_OPENAI_BASE="https://<your-apim>.azure-api.net"
+export APIM_SUBSCRIPTION_KEY="<your-apim-subscription-key>"
+export OPENAI_DEPLOYMENT="<your-aoai-deployment>"
+export OPENAI_API_VERSION="2024-06-01"
+```
+
+> Review Agent/Thread/Run vocabulary and minimal creation flow in the overview and quickstart. ([Microsoft Learn][1], [Microsoft Learn][5])
+
+### 1) [G] Connected Agents (Multi-agent orchestration)
+
+#### Python
+
+```python
+# pip install azure-ai-projects azure-ai-agents azure-identity
+import os
+from azure.ai.agents.models import ConnectedAgentTool, MessageRole
+from azure.ai.projects import AIProjectClient
+from azure.identity import DefaultAzureCredential
+
+project = AIProjectClient(
+    endpoint=os.environ["PROJECT_ENDPOINT"],
+    credential=DefaultAzureCredential(),
+)
+
+stock_agent = project.agents.create_agent(
+    model=os.environ["MODEL_DEPLOYMENT_NAME"],
+    name="stock_price_bot",
+    instructions=(
+        "You get the stock price of a company. If real-time is not available, "
+        "return the last known price."
+    ),
+)
+
+connected = ConnectedAgentTool(
+    id=stock_agent.id,
+    name=stock_agent.name,
+    description="Gets the stock price of a company",
+)
+
+main_agent = project.agents.create_agent(
+    model=os.environ["MODEL_DEPLOYMENT_NAME"],
+    name="research_agent",
+    instructions="Use available tools to answer questions.",
+    tools=connected.definitions,
+)
+
+thread = project.agents.threads.create()
+project.agents.messages.create(
+    thread_id=thread.id,
+    role=MessageRole.USER,
+    content="What is the stock price of Microsoft?",
+)
+run = project.agents.runs.create_and_process(
+    thread_id=thread.id,
+    agent_id=main_agent.id,
+)
+
+for message in project.agents.messages.list(thread_id=thread.id).text_messages:
+    print(message)
+```
+
+#### .NET (C#)
+
+```csharp
+// dotnet add package Azure.AI.Agents.Persistent --prerelease
+// dotnet add package Azure.Identity
+using Azure.AI.Agents.Persistent;
+using Azure.Identity;
+
+var endpoint = Environment.GetEnvironmentVariable("PROJECT_ENDPOINT");
+var model = Environment.GetEnvironmentVariable("MODEL_DEPLOYMENT_NAME");
+
+var client = new PersistentAgentsClient(endpoint, new DefaultAzureCredential());
+
+var stockAgent = client.Administration.CreateAgent(
+    model: model,
+    name: "stock_price_bot",
+    instructions: "Get stock prices. If real-time isn't available, return the last known price."
+);
+
+var connected = new ConnectedAgentToolDefinition(
+    new ConnectedAgentDetails(
+        stockAgent.Id,
+        stockAgent.Name,
+        "Gets the stock price of a company"
+    )
+);
+
+var mainAgent = client.Administration.CreateAgent(
+    model: model,
+    name: "research_agent",
+    instructions: "Use available tools to answer questions.",
+    tools: [connected]
+);
+
+var thread = client.Threads.CreateThread();
+client.Messages.CreateMessage(
+    thread.Id,
+    MessageRole.User,
+    "What is the stock price of Microsoft?"
+);
+var run = client.Runs.CreateRun(thread, mainAgent);
+
+while (run.Status is RunStatus.InProgress or RunStatus.Queued)
+{
+    Thread.Sleep(500);
+    run = client.Runs.GetRun(thread.Id, run.Id);
+}
+
+foreach (var message in client.Messages.GetMessages(thread.Id, order: ListSortOrder.Ascending))
+{
+    foreach (var content in message.ContentItems)
+    {
+        if (content is MessageTextContent text)
+        {
+            Console.WriteLine($"{message.Role}: {text.Text}");
+        }
+    }
+}
+```
+
+> Configure connected agents and delegation prompts per the official how-to. ([Microsoft Learn][10])
+
+### 2) [H] Evaluation (quality, safety, agent metrics)
+
+#### 2-A. Python: Continuous Evaluation (cloud)
+
+```python
+# pip install azure-ai-projects azure-identity azure-monitor-query
+import os
+from datetime import timedelta
+from azure.ai.projects import AIProjectClient
+from azure.ai.projects.models import AgentEvaluationRequest, EvaluatorIds
+from azure.identity import DefaultAzureCredential
+from azure.monitor.query import LogsQueryClient, LogsQueryStatus
+
+project = AIProjectClient(
+    endpoint=os.environ["PROJECT_ENDPOINT"],
+    credential=DefaultAzureCredential(),
+)
+
+evaluators = {
+    "Relevance": {"Id": EvaluatorIds.Relevance.value},
+    "Fluency": {"Id": EvaluatorIds.Fluency.value},
+    "Coherence": {"Id": EvaluatorIds.Coherence.value},
+    "ToolCallAccuracy": {"Id": EvaluatorIds.ToolCallAccuracy.value},
+}
+
+app_insights_cs = project.telemetry.get_application_insights_connection_string()
+
+eval_run = project.evaluation.create_agent_evaluation(
+    AgentEvaluationRequest(
+        thread=thread.id,
+        run=run.id,
+        evaluators=evaluators,
+        app_insights_connection_string=app_insights_cs,
+    )
+)
+print("Evaluation requested:", eval_run.name)
+
+logs = LogsQueryClient(DefaultAzureCredential())
+kql = f"""
+traces
+| where message == "gen_ai.evaluation.result"
+| where customDimensions["gen_ai.thread.run.id"] == "{run.id}"
+"""
+response = logs.query_workspace(
+    os.environ["LOGS_WORKSPACE_ID"],
+    kql,
+    timespan=timedelta(days=1),
+)
+
+if response.status == LogsQueryStatus.SUCCESS:
+    for table in response.tables:
+        for row in table.rows:
+            print(dict(zip(table.columns, row)))
+```
+
+> Follow the continuous evaluation guide to wire Application Insights telemetry. ([Microsoft Learn][34])
+
+#### 2-B. Python: Local Evaluation SDK (RAG metrics)
+
+```python
+# pip install azure-ai-evaluation
+from azure.ai.evaluation import evaluate
+
+result = evaluate(
+    data="dataset.jsonl",
+    evaluators={
+        "Groundedness": "groundedness",
+        "ResponseCompleteness": "response_completeness",
+        "Retrieval": "retrieval",
+    },
+    evaluation_name="rag-eval-run",
+)
+
+print(result["metrics"])
+```
+
+> Built-in evaluators and usage details are documented in the Evaluation SDK guide. ([Microsoft Learn][36])
+
+#### 2-C. .NET: Agent evaluation API
+
+```csharp
+// dotnet add package Azure.AI.Projects --prerelease
+// dotnet add package Azure.Identity
+using Azure.AI.Projects;
+using Azure.Identity;
+
+var projects = new AIProjectsClient(endpoint, new DefaultAzureCredential());
+
+var evaluators = new Dictionary<string, EvaluatorConfiguration>
+{
+    { "Relevance", new EvaluatorConfiguration(EvaluatorIds.Relevance) },
+    { "Fluency", new EvaluatorConfiguration(EvaluatorIds.Fluency) },
+    { "ToolCallAccuracy", new EvaluatorConfiguration(EvaluatorIds.ToolCallAccuracy) },
+};
+
+var request = AzureAIProjectsModelFactory.AgentEvaluationRequest(
+    runId: run.Id,
+    threadId: thread.Id,
+    evaluators: evaluators
+);
+
+var evaluation = projects.Evaluations.CreateAgentEvaluation(request);
+Console.WriteLine($"Agent evaluation started: {evaluation.Value.Name}");
+```
+
+> Use the `Evaluations.CreateAgentEvaluation` method from the .NET SDK. ([Microsoft Learn][37])
+
+### 3) [I] Observability (monitoring & tracing)
+
+#### 3-A. Python: Send OpenTelemetry to App Insights
+
+```python
+# pip install azure-monitor-opentelemetry opentelemetry-sdk
+from azure.monitor.opentelemetry import configure_azure_monitor
+
+configure_azure_monitor(
+    connection_string=os.environ["APPLICATIONINSIGHTS_CONNECTION_STRING"]
+)
+
+# Subsequent AIProjectClient executions emit traces into App Insights
+```
+
+> Minimal OpenTelemetry setup is covered in the Azure Monitor configuration article. ([Microsoft Learn][38])
+
+#### 3-B. .NET: Query App Insights via KQL
+
+```csharp
+// dotnet add package Azure.Monitor.Query
+// dotnet add package Azure.Identity
+using Azure.Identity;
+using Azure.Monitor.Query;
+
+var logsClient = new LogsQueryClient(new DefaultAzureCredential());
+
+var query = $@"
+traces
+| where message == "gen_ai.evaluation.result"
+| where tostring(customDimensions["gen_ai.thread.run.id"]) == "{run.Id}"
+";
+
+var result = logsClient.QueryWorkspace(
+    Environment.GetEnvironmentVariable("LOGS_WORKSPACE_ID"),
+    query,
+    TimeSpan.FromDays(1)
+);
+
+foreach (var table in result.Value.Tables)
+{
+    foreach (var row in table.Rows)
+    {
+        Console.WriteLine(string.Join(" | ", row));
+    }
+}
+```
+
+> See the Azure Monitor Query samples for more KQL examples. ([Microsoft Learn][39])
+
+### 4) [J] Responsible AI (Content Safety guards)
+
+#### Python: Input/output safety check
+
+```python
+# pip install azure-ai-contentsafety
+import os
+from azure.ai.contentsafety import ContentSafetyClient
+from azure.ai.contentsafety.models import (
+    AnalyzeTextOptions,
+    AnalyzeTextOutputType,
+    TextCategory,
+)
+from azure.core.credentials import AzureKeyCredential
+
+client = ContentSafetyClient(
+    endpoint=os.environ["CONTENT_SAFETY_ENDPOINT"],
+    credential=AzureKeyCredential(os.environ["CONTENT_SAFETY_KEY"]),
+)
+
+def is_safe_text(text: str) -> bool:
+    options = AnalyzeTextOptions(
+        text=text,
+        categories=[
+            TextCategory.HATE,
+            TextCategory.SELF_HARM,
+            TextCategory.SEXUAL,
+            TextCategory.VIOLENCE,
+        ],
+        output_type=AnalyzeTextOutputType.FOUR_SEVERITY_LEVELS,
+    )
+    result = client.analyze_text(options)
+    severities = [category.severity for category in result.categories_analysis]
+    return max(severities, default=0) < 4
+
+user_input = "..."
+if not is_safe_text(user_input):
+    raise ValueError("Input rejected by safety policy")
+
+agent_output = "..."
+if not is_safe_text(agent_output):
+    agent_output = "The response was withheld due to safety policy."
+```
+
+> SDK usage and severity interpretation are detailed in the Content Safety README. ([Microsoft Learn][40])
+
+#### .NET: Input/output safety check
+
+```csharp
+// dotnet add package Azure.AI.ContentSafety
+// dotnet add package Azure.Identity
+using Azure;
+using Azure.AI.ContentSafety;
+
+var csClient = new ContentSafetyClient(
+    new Uri(Environment.GetEnvironmentVariable("CONTENT_SAFETY_ENDPOINT")),
+    new AzureKeyCredential(Environment.GetEnvironmentVariable("CONTENT_SAFETY_KEY"))
+);
+
+bool IsSafe(string text)
+{
+    var options = new AnalyzeTextOptions(text)
+    {
+        OutputType = AnalyzeTextOutputType.FourSeverityLevels,
+    };
+
+    var response = csClient.AnalyzeText(options);
+    var maxSeverity = response.Value.CategoriesAnalysis.Max(category => (int)category.Severity);
+    return maxSeverity < 4;
+}
+```
+
+> The .NET Content Safety SDK mirrors the same options; see the official reference. ([Microsoft Learn][41])
+
+### 5) [M] Rate control & cost optimization (APIM + 429 retry)
+
+Apply APIM's `azure-openai-token-limit-policy` and configure `tokens-per-minute` / `counter-key` thresholds to enforce tenant-level quotas. ([Microsoft Learn][30])
+
+#### Python: Honor 429 `Retry-After`
+
+```python
+# pip install requests
+import os
+import time
+import requests
+
+def call_openai_via_apim(messages):
+    url = (
+        f"{os.environ['APIM_OPENAI_BASE']}/openai/deployments/"
+        f"{os.environ['OPENAI_DEPLOYMENT']}/chat/completions"
+        f"?api-version={os.environ['OPENAI_API_VERSION']}"
+    )
+    headers = {
+        "Ocp-Apim-Subscription-Key": os.environ["APIM_SUBSCRIPTION_KEY"],
+        "Content-Type": "application/json",
+    }
+    payload = {"messages": messages, "max_tokens": 256}
+
+    for _ in range(5):
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        if response.status_code == 429:
+            retry_after = (
+                response.headers.get("Retry-After")
+                or response.headers.get("Retry-After-Ms")
+            )
+            delay = (
+                float(retry_after) / 1000.0
+                if retry_after and retry_after.isdigit() and int(retry_after) > 1000
+                else float(retry_after or 1)
+            )
+            time.sleep(min(delay, 10))
+            continue
+        response.raise_for_status()
+        return response.json()
+
+    raise RuntimeError("Retries exhausted")
+```
+
+#### .NET: Retry with Polly
+
+```csharp
+// dotnet add package Polly
+// dotnet add package Azure.Identity
+using Polly;
+using System.Text;
+using System.Text.Json;
+
+double GetDelay(HttpResponseMessage response)
+{
+    if (response.Headers.TryGetValues("Retry-After", out var seconds) &&
+        double.TryParse(seconds.FirstOrDefault(), out var sec))
+    {
+        return sec;
+    }
+
+    if (response.Headers.TryGetValues("Retry-After-Ms", out var milliseconds) &&
+        double.TryParse(milliseconds.FirstOrDefault(), out var ms))
+    {
+        return ms / 1000.0;
+    }
+
+    return 1.0;
+}
+
+var policy = Policy
+    .HandleResult<HttpResponseMessage>(resp => (int)resp.StatusCode == 429)
+    .WaitAndRetryAsync(5, (retry, context) =>
+    {
+        var lastResponse = (HttpResponseMessage)context["lastResponse"];
+        return TimeSpan.FromSeconds(Math.Min(GetDelay(lastResponse), 10));
+    }, (outcome, delay, retry, context) => Task.CompletedTask);
+
+var httpClient = new HttpClient();
+httpClient.DefaultRequestHeaders.Add(
+    "Ocp-Apim-Subscription-Key",
+    Environment.GetEnvironmentVariable("APIM_SUBSCRIPTION_KEY")
+);
+
+var requestUri = (
+    $"{Environment.GetEnvironmentVariable("APIM_OPENAI_BASE")}/openai/deployments/"
+    + $"{Environment.GetEnvironmentVariable("OPENAI_DEPLOYMENT")}/chat/completions"
+    + $"?api-version={Environment.GetEnvironmentVariable("OPENAI_API_VERSION")}" 
+);
+
+var payload = JsonSerializer.Serialize(new
+{
+    messages = new[] { new { role = "user", content = "hello" } },
+    max_tokens = 256,
+});
+
+var response = await policy.ExecuteAsync(async context =>
+{
+    var httpResponse = await httpClient.PostAsync(
+        requestUri,
+        new StringContent(payload, Encoding.UTF8, "application/json")
+    );
+    context["lastResponse"] = httpResponse;
+    return httpResponse;
+}, new Context());
+
+response.EnsureSuccessStatusCode();
+```
+
+> Cross-check latest quota guidance when designing rate allocation. ([Microsoft Learn][28])
+
+### 6) [K/L] Identity & network highlights
+
+* Use `DefaultAzureCredential` as the base, layering Managed Identity / Entra ID best practices.
+* Once Observability is enabled, wire the Foundry dashboard to App Insights. ([Microsoft Learn][12])
+* Select Hub/Project Managed Network, Private Link, or Agent Service VNet options per requirement, and prefer Private Endpoints for OpenAI/data sources. ([Microsoft Learn][23])
+
+### Bonus: Installation cheat sheet for Day2 samples
+
+```bash
+pip install azure-ai-projects azure-ai-agents azure-identity \
+            azure-ai-evaluation azure-monitor-query \
+            azure-ai-contentsafety azure-monitor-opentelemetry opentelemetry-sdk requests
+```
+
+```bash
+dotnet add package Azure.AI.Projects --prerelease
+dotnet add package Azure.AI.Agents.Persistent --prerelease
+dotnet add package Azure.Monitor.Query
+dotnet add package Azure.AI.ContentSafety
+dotnet add package Azure.Identity
+dotnet add package Polly
+```
+
+---
+
 ## Appendix: "Diagrams, Tables, Code Fragments" Templates for Slide Materials
 
 * **Architecture Diagrams (Day1 S4/S13/S18, Day2 S42–S45)**
@@ -419,3 +929,10 @@ Should we proceed with creating materials? If you tell us about distribution for
 [31]: https://learn.microsoft.com/en-us/azure/api-management/api-management-sample-flexible-throttling "Advanced Request Throttling with Azure API Management"
 [32]: https://learn.microsoft.com/en-us/azure/ai-foundry/ "Azure AI Foundry documentation"
 [33]: https://github.com/microsoft/AzureOpenAI-with-APIM "microsoft/AzureOpenAI-with-APIM"
+[34]: https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/continuous-evaluation-agents "Continuously Evaluate your AI agents"
+[36]: https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/evaluate-sdk "Local evaluation with the Azure AI Evaluation SDK"
+[37]: https://learn.microsoft.com/en-us/dotnet/api/azure.ai.projects.evaluations.createagentevaluation "Evaluations.CreateAgentEvaluation Method"
+[38]: https://learn.microsoft.com/en-us/azure/azure-monitor/app/opentelemetry-configuration "Configure Azure Monitor OpenTelemetry"
+[39]: https://learn.microsoft.com/en-us/samples/azure/azure-sdk-for-python/query-azuremonitor-samples/ "Azure Monitor Query client library Python samples"
+[40]: https://learn.microsoft.com/en-us/python/api/overview/azure/ai-contentsafety-readme "Azure AI Content Safety client library for Python"
+[41]: https://learn.microsoft.com/en-us/dotnet/api/overview/azure/ai.contentsafety-readme "Azure AI Content Safety client library for .NET"

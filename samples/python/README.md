@@ -11,7 +11,10 @@ Azure AI Foundry Agent Service を扱うワークショップの各セッショ�
 | `03_logic_app_tool/` | Day1 S18–S20 | Logic Apps を Function Tool として連携し、通知メールを送信するサンプル。 |
 | `04_connected_agents/` | Day1 S21–S24 & Day2 S25–S27 | Typer/Rich ベースの CLI から Connected Agents ワークフローをオーケストレーション。 |
 | `05_evaluation/` | Day2 S28–S31 | Azure AI Evaluation SDK を利用した Intent Resolution / Content Safety の評価。 |
+| `06_observability_tracing/` | Day2 S32–S35 | OpenTelemetry + Azure Monitor Exporter を用いたエージェント トレース収集のサンプル。 |
 | `common/` | 共通 | 共有ユーティリティ (設定、ロギング、Logic App ラッパーなど)。 |
+
+> ℹ️ **補足資料**: Day2 S32–S35 の詳細なハンズオン手順は英語版の [Observability Tracing Hands-on Guide](../../docs/observability-tracing-handson.md) と日本語版の [オブザーバビリティ トレーシング ハンズオン ガイド](../../docs/ja/observability-tracing-handson.md) を参照してください。
 
 ## 前提条件
 
@@ -46,6 +49,7 @@ pip install -r requirements.txt
 | `03_logic_app_tool` | `LOGIC_APP_CALLBACK_URL` | Logic Apps (HTTP トリガー) のコールバック URL。消費プランでのワークフローに対応しています。参考: [Logic Apps 連携ガイド](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/how-to/tools/logic-apps?pivots=programming-language-python)。 |
 | `04_connected_agents` | `WORKSHOP_RESEARCH_AGENT_ID`, `WORKSHOP_ANALYSIS_AGENT_ID`, `WORKSHOP_WRITING_AGENT_ID` (任意) | Foundry 上で事前に作成した Connected Agent の ID。省略時は `research-agent` / `analysis-agent` / `writing-agent` を使用します。 |
 | `05_evaluation` | `EVAL_AOAI_ENDPOINT`, `EVAL_AOAI_DEPLOYMENT`, `EVAL_AOAI_API_KEY`, `EVAL_AOAI_API_VERSION` (省略可), `AZURE_AI_PROJECT` (任意) | 評価用の Azure OpenAI モデルへのアクセス情報。`AZURE_AI_PROJECT` を指定すると Content Safety 評価結果が Foundry プロジェクトに保存されます。参考: [Evaluate your AI agents locally](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/agent-evaluate-sdk)。 |
+| `06_observability_tracing` | `APPLICATIONINSIGHTS_CONNECTION_STRING` (任意), `ENABLE_AGENT_TRACE_CONTENT` (任意) | 接続文字列を設定するとトレースが Application Insights へ送信されます。未設定の場合はコンソール出力にフォールバックします。`ENABLE_AGENT_TRACE_CONTENT=true` でメッセージ本文やツール呼び出し内容も記録。参考: [Configure Azure Monitor OpenTelemetry](https://learn.microsoft.com/en-us/azure/azure-monitor/app/opentelemetry-configuration)。 |
 
 ## 実行例
 
@@ -55,6 +59,7 @@ python -m samples.python.02_ai_search_rag.main
 python -m samples.python.03_logic_app_tool.main
 python -m samples.python.04_connected_agents.main run
 python -m samples.python.05_evaluation.main
+python -m samples.python.06_observability_tracing.main
 ```
 
 `04_connected_agents` は [Typer](https://typer.tiangolo.com/) を利用した CLI です。利用可能なサブコマンドは `--help` で確認できます。

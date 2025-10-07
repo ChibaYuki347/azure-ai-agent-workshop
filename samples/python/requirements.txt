@@ -6,3 +6,6 @@ requests>=2.32.0
 python-dotenv>=1.0.0
 rich>=13.7.0
 typer[all]>=0.12.3
+azure-core-tracing-opentelemetry>=1.0.0b10
+opentelemetry-sdk>=1.23.0
+azure-monitor-opentelemetry-exporter>=1.0.0b13

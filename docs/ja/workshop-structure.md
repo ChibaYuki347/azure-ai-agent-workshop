@@ -227,6 +227,7 @@
 
 * **入れる要素**：OpenTelemetry系の参考（任意）
 * **Notes**：公式以外の選択肢もある旨の参考。([Dynatrace][18])
+* **Handout**：実機演習では [Observability Tracing Hands-on Guide (EN)](../observability-tracing-handson.md) / [オブザーバビリティ トレーシング ハンズオン ガイド (JA)](observability-tracing-handson.md) を配布し、Application Insights 連携ステップを補足。
 
 ---
 
@@ -601,6 +602,8 @@ configure_azure_monitor(
 ```
 
 > OpenTelemetry の設定は Azure Monitor ガイドを参照。([Microsoft Learn][38])
+
+> 🔧 実装例: `samples/python/06_observability_tracing/main.py` では `AIAgentsInstrumentor` と OpenTelemetry エクスポーターを組み合わせ、任意でメッセージ内容のトレースも有効化するハンズオン用コードを提供しています。
 
 #### 3-B. .NET：App Insights ログを KQL で取得
 

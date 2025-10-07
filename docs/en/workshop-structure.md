@@ -589,6 +589,8 @@ configure_azure_monitor(
 
 > Minimal OpenTelemetry setup is covered in the Azure Monitor configuration article. ([Microsoft Learn][38])
 
+> 🔧 Sample implementation: `samples/python/06_observability_tracing/main.py` sets up `AIAgentsInstrumentor`, OpenTelemetry exporters, and optional content tracing flags for live demos.
+
 #### 3-B. .NET: Query App Insights via KQL
 
 ```csharp
